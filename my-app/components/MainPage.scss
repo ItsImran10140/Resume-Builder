@@ -1,0 +1,134 @@
+.resume-editor-pane {
+  .tiptap.ProseMirror.simple-editor {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+    p,
+    ul,
+    ol,
+    li {
+      text-align: left;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+    p {
+      min-height: 1.3em;
+    }
+
+    p:empty,
+    p:has(> br:only-child),
+    p:has(> .ProseMirror-trailingBreak:only-child) {
+      min-height: 1.3em;
+    }
+
+    /* Override tiptap template default paragraph gaps */
+    p:not(:first-child) {
+      margin-top: 0;
+    }
+  }
+}
+
+.preview-pane {
+  border-right: 1px solid #e4e4e7;
+}
+
+.score-drawer-resize-handle {
+  height: 6px;
+  cursor: ns-resize;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.score-drawer-toggle-anchor {
+  position: relative;
+  height: 0;
+  flex-shrink: 0;
+}
+
+.score-drawer-toggle-stack {
+  position: absolute;
+  left: 0;
+  top: -28px;
+  z-index: 5;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.score-drawer-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 30px;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  background: #fff;
+  color: #52525b;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background: #f4f4f5;
+  }
+}
+
+.score-drawer-fullscreen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.score-drawer-fullscreen-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #e4e4e7;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.score-drawer-fullscreen-nav-controls {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  gap: 4px;
+}
+
+.score-drawer-fullscreen-nav-title {
+  text-align: center;
+  line-height: 1.1;
+
+  p:first-child {
+    font-size: 11px;
+    font-weight: 600;
+    color: #18181b;
+  }
+
+  p:last-child {
+    margin-top: 1px;
+    font-size: 10px;
+    color: #71717a;
+  }
+}
+
+.score-bottom-drawer {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}

@@ -1,0 +1,10 @@
+# Use Python 3.12 for best compatibility. Python 3.14 works with these pins (prebuilt wheels).
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.12.0
+pydantic-settings>=2.10.0
+scikit-learn>=1.5.0
+numpy>=2.0.0
+python-multipart>=0.0.20
+
+# Optional spaCy (Python 3.11–3.12 only): pip install "spacy>=3.8.13" && python -m spacy download en_core_web_sm
