@@ -50,7 +50,7 @@ function MainPageInner() {
   const [pageSizeId, setPageSizeId] = useState<PageSizeId>(DEFAULT_PAGE_SIZE_ID);
   const [pageCount, setPageCount] = useState(1);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const defaultDrawerHeight = 180;
+  const defaultDrawerHeight = 280;
   const [drawerHeight, setDrawerHeight] = useState(defaultDrawerHeight);
   const [isDrawerCollapsed, setIsDrawerCollapsed] = useState(false);
   const [isDrawerFullscreen, setIsDrawerFullscreen] = useState(false);
@@ -62,13 +62,12 @@ function MainPageInner() {
     bootstrap,
     onEditorUpdate,
     updateTitle,
-    updateJobTitle,
     rescore,
   } = useResumeSync(resumeIdFromUrl);
 
   const pageSize = getPageSize(pageSizeId);
-  const minDrawerHeight = 180;
-  const maxDrawerHeight = 520;
+  const minDrawerHeight = 240;
+  const maxDrawerHeight = 560;
 
   const handlePagePaddingChange = useCallback((next: PagePadding) => {
     setPagePadding(next);
@@ -238,9 +237,16 @@ function MainPageInner() {
             type="button"
             onClick={rescore}
             disabled={isScoring}
-            className="shrink-0 rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+            aria-busy={isScoring}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-70"
           >
-            Re-score
+            {isScoring && (
+              <span
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"
+                aria-hidden
+              />
+            )}
+            {isScoring ? "Scoring…" : "Re-score"}
           </button>
           <SignOutButton />
         </div>
@@ -417,11 +423,7 @@ function MainPageInner() {
                         </div>
                       </div>
                     )}
-                    <ScoreBottomDrawer
-                      className="score-bottom-drawer bg-white"
-                      onJobTitleChange={updateJobTitle}
-                      showScoreMetaText={!isDrawerFullscreen}
-                    />
+                    <ScoreBottomDrawer className="score-bottom-drawer bg-white" />
                   </div>
                 </>
               )}
@@ -429,7 +431,7 @@ function MainPageInner() {
           )}
         </div>
         {SCORE_LAYOUT_VARIANT === "sidebar" && (
-          <ScoreSidebar onRescore={rescore} onJobTitleChange={updateJobTitle} />
+          <ScoreSidebar />
         )}
       </div>
     </div>

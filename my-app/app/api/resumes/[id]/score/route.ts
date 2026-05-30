@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
-import { scoreResume } from "@/lib/scorer-client";
+import { scoreReportToStoredBreakdown, scoreResume } from "@/lib/scorer-client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -21,7 +21,7 @@ export async function POST(request: Request, context: RouteContext) {
   const body = (await request.json()) as {
     plainText: string;
     jobTitle?: string;
-    targetKeywords?: string[];
+    roleKey?: string;
   };
 
   if (!body.plainText?.trim()) {
@@ -32,25 +32,25 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   try {
-    const result = await scoreResume(
+    const report = await scoreResume(
       body.plainText,
       body.jobTitle,
-      body.targetKeywords,
+      body.roleKey,
     );
 
     const saved = await prisma.score.create({
       data: {
         resumeId: id,
-        overall: result.overall,
-        breakdown: result.breakdown,
-        suggestions: result.suggestions,
+        overall: report.overall,
+        breakdown: scoreReportToStoredBreakdown(report),
+        suggestions: report.suggestions,
         jobTitle: body.jobTitle,
       },
     });
 
     return NextResponse.json({
       score: saved,
-      extracted_sections: result.extracted_sections,
+      report,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Scoring failed";

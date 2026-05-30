@@ -1,12 +1,15 @@
 import { create } from "zustand";
-import type { ScoreSuggestion } from "@/lib/scorer-client";
+import type {
+  AiAudit,
+  ScoreBreakdown,
+  ScoreCategory,
+  ScoreMetrics,
+  ScoreReport,
+  ScoreStrength,
+  ScoreSuggestion,
+} from "@/lib/score-types";
 
-export type ScoreBreakdownState = {
-  keywords: number;
-  sections: number;
-  formatting: number;
-  length: number;
-};
+export type ScoreBreakdownState = ScoreBreakdown;
 
 type ResumeEditorState = {
   resumeId: string | null;
@@ -16,9 +19,17 @@ type ResumeEditorState = {
   isDirty: boolean;
   isSaving: boolean;
   atsScore: number | null;
+  scoreGrade: string | null;
   scoreBreakdown: ScoreBreakdownState | null;
+  scoreCategories: ScoreCategory[];
+  scoreStrengths: ScoreStrength[];
+  scoreMetrics: ScoreMetrics | null;
+  aiAudit: AiAudit | null;
   suggestions: ScoreSuggestion[];
+  selectedCategoryId: string | null;
   isScoring: boolean;
+  scoringMessage: string | null;
+  aiCoachStatus: "idle" | "pending" | "ready" | "unavailable";
   scoreError: string | null;
   jobTitle: string;
   lastScoredAt: string | null;
@@ -28,11 +39,8 @@ type ResumeEditorState = {
   setPlainText: (text: string) => void;
   setDirty: (dirty: boolean) => void;
   setSaving: (saving: boolean) => void;
-  setScore: (
-    overall: number,
-    breakdown: ScoreBreakdownState,
-    suggestions: ScoreSuggestion[],
-  ) => void;
+  setScoreReport: (report: ScoreReport) => void;
+  setSelectedCategoryId: (id: string | null) => void;
   setScoring: (scoring: boolean) => void;
   setScoreError: (error: string | null) => void;
   setJobTitle: (jobTitle: string) => void;
@@ -47,9 +55,17 @@ const initialState = {
   isDirty: false,
   isSaving: false,
   atsScore: null,
+  scoreGrade: null,
   scoreBreakdown: null,
+  scoreCategories: [] as ScoreCategory[],
+  scoreStrengths: [] as ScoreStrength[],
+  scoreMetrics: null as ScoreMetrics | null,
+  aiAudit: null as AiAudit | null,
   suggestions: [] as ScoreSuggestion[],
+  selectedCategoryId: null as string | null,
   isScoring: false,
+  scoringMessage: null,
+  aiCoachStatus: "idle" as const,
   scoreError: null,
   jobTitle: "",
   lastScoredAt: null,
@@ -63,18 +79,43 @@ export const useResumeStore = create<ResumeEditorState>((set) => ({
   setPlainText: (plainText) => set({ plainText }),
   setDirty: (isDirty) => set({ isDirty }),
   setSaving: (isSaving) => set({ isSaving }),
-  setScore: (atsScore, scoreBreakdown, suggestions) =>
+  setScoreReport: (report) => {
+    const topFix =
+      report.categories.find((c) => c.issue_count > 0)?.id ??
+      report.categories[0]?.id ??
+      null;
     set({
-      atsScore,
-      scoreBreakdown,
-      suggestions,
+      atsScore: report.overall,
+      scoreGrade: report.grade,
+      scoreBreakdown: report.breakdown,
+      scoreCategories: report.categories,
+      scoreStrengths: report.strengths,
+      scoreMetrics: report.metrics,
+      aiAudit: report.aiAudit,
+      aiCoachStatus:
+        report.aiAudit && !report.aiAudit.error ? "ready" : "unavailable",
+      suggestions: report.suggestions,
+      selectedCategoryId: topFix,
       isScoring: false,
+      scoringMessage: null,
       scoreError: null,
       lastScoredAt: new Date().toISOString(),
-    }),
-  setScoring: (isScoring) => set({ isScoring }),
+    });
+  },
+  setSelectedCategoryId: (selectedCategoryId) => set({ selectedCategoryId }),
+  setScoring: (isScoring) =>
+    set((state) => ({
+      isScoring,
+      scoringMessage: isScoring ? "Analyzing ATS checks & AI coach…" : null,
+      aiCoachStatus: isScoring ? "pending" : state.aiCoachStatus,
+    })),
   setScoreError: (scoreError) =>
-    set({ scoreError, isScoring: false }),
+    set({
+      scoreError,
+      isScoring: false,
+      scoringMessage: null,
+      aiCoachStatus: "idle",
+    }),
   setJobTitle: (jobTitle) => set({ jobTitle }),
   reset: () => set(initialState),
 }));

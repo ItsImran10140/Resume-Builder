@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import throttle from "lodash.throttle";
 import { htmlToPlainText } from "@/lib/html-to-plain-text";
-import { getStoredJobTitle, saveJobTitle } from "@/lib/job-title-storage";
+import { getStoredJobTitle } from "@/lib/job-title-storage";
 import {
   createResume,
   fetchResume,
@@ -19,11 +19,9 @@ import {
   getResumeId,
   saveResumeId,
 } from "@/lib/resume-storage";
-import {
-  useResumeStore,
-  type ScoreBreakdownState,
-} from "@/stores/resume-store";
-import type { ScoreSuggestion } from "@/lib/scorer-client";
+import { storedBreakdownToReport } from "@/lib/scorer-client";
+import { useResumeStore } from "@/stores/resume-store";
+import type { ScoreSuggestion } from "@/lib/score-types";
 
 const SAVE_MS = 1500;
 const SCORE_MS = 2500;
@@ -42,7 +40,7 @@ export function useResumeSync(resumeIdFromUrl: string | null) {
   const setDirty = useResumeStore((s) => s.setDirty);
   const setSaving = useResumeStore((s) => s.setSaving);
   const setScoring = useResumeStore((s) => s.setScoring);
-  const setScore = useResumeStore((s) => s.setScore);
+  const setScoreReport = useResumeStore((s) => s.setScoreReport);
   const setScoreError = useResumeStore((s) => s.setScoreError);
   const setJobTitle = useResumeStore((s) => s.setJobTitle);
 
@@ -75,13 +73,17 @@ export function useResumeSync(resumeIdFromUrl: string | null) {
       suggestions: unknown;
     } | null) => {
       if (!latest) return false;
-      const breakdown = latest.breakdown as ScoreBreakdownState | null;
-      const suggestions = latest.suggestions as ScoreSuggestion[] | null;
-      if (!breakdown || !suggestions) return false;
-      setScore(latest.overall, breakdown, suggestions);
+      const suggestions = (latest.suggestions as ScoreSuggestion[]) ?? [];
+      const report = storedBreakdownToReport(
+        latest.overall,
+        latest.breakdown,
+        suggestions,
+      );
+      if (!report) return false;
+      setScoreReport(report);
       return true;
     },
-    [setScore],
+    [setScoreReport],
   );
 
   const runScore = useCallback(
@@ -97,19 +99,16 @@ export function useResumeSync(resumeIdFromUrl: string | null) {
 
       try {
         const result = await scoreResume(id, plain, jobTitle);
-        const { breakdown, suggestions, overall } = result.score;
-        setScore(
-          overall,
-          breakdown as ScoreBreakdownState,
-          suggestions as ScoreSuggestion[],
-        );
+        if (result.report) {
+          setScoreReport(result.report);
+        }
       } catch (err) {
         setScoreError(
           err instanceof Error ? err.message : "Could not score resume",
         );
       }
     },
-    [setPlainText, setScore, setScoreError, setScoring],
+    [setPlainText, setScoreReport, setScoreError, setScoring],
   );
 
   const runScoreRef = useRef(runScore);
@@ -283,46 +282,15 @@ export function useResumeSync(resumeIdFromUrl: string | null) {
     const id = resumeIdRef.current;
     const html = htmlRef.current;
     if (!id || !html.trim()) return;
+    if (useResumeStore.getState().isScoring) return;
     scoreRef.current.cancel();
     void runScore(id, html);
   }, [runScore]);
-
-  const jobTitleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-
-  const updateJobTitle = useCallback(
-    (title: string) => {
-      setJobTitle(title);
-      saveJobTitle(title);
-
-      if (jobTitleDebounceRef.current) {
-        clearTimeout(jobTitleDebounceRef.current);
-      }
-      jobTitleDebounceRef.current = setTimeout(() => {
-        const id = resumeIdRef.current;
-        const html = htmlRef.current;
-        if (id && html.trim()) {
-          void runScore(id, html);
-        }
-      }, 800);
-    },
-    [runScore, setJobTitle],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (jobTitleDebounceRef.current) {
-        clearTimeout(jobTitleDebounceRef.current);
-      }
-    };
-  }, []);
 
   return {
     bootstrap,
     onEditorUpdate,
     updateTitle,
-    updateJobTitle,
     rescore,
     runScore,
   };

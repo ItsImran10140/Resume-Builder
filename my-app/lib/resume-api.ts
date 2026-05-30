@@ -1,4 +1,4 @@
-import type { ScoreBreakdown, ScoreSuggestion } from "@/lib/scorer-client";
+import type { ScoreBreakdown, ScoreReport, ScoreSuggestion } from "@/lib/score-types";
 import {
   buildResumeContent,
   parseResumeContent,
@@ -99,7 +99,7 @@ export async function scoreResume(
   jobTitle?: string,
 ): Promise<{
   score: ScoreRecord;
-  extracted_sections?: Record<string, string>;
+  report: ScoreReport;
 }> {
   const res = await fetch(`/api/resumes/${id}/score`, {
     method: "POST",
@@ -110,7 +110,7 @@ export async function scoreResume(
   if (!res.ok) throw new Error(await parseError(res));
   return res.json() as Promise<{
     score: ScoreRecord;
-    extracted_sections?: Record<string, string>;
+    report: ScoreReport;
   }>;
 }
 
